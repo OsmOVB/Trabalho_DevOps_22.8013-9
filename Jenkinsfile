@@ -35,59 +35,41 @@ pipeline {
         }
         stage('Build') {
             steps {
-                script {
-                    echo "=== Construindo os containers ==="
-                    sh 'docker-compose build'
-                }
+                echo "=== Construindo os containers ==="
+                sh 'docker-compose build'
             }
         }
         stage('Run Containers') {
             steps {
-                script {
-                    echo "=== Iniciando os containers ==="
-                    sh 'docker-compose up -d'
-                }
+                echo "=== Iniciando os containers ==="
+                sh 'docker-compose up -d'
             }
         }
         stage('Run Tests') {
             steps {
-                script {
-                    echo "=== Executando os testes ==="
+                echo "=== Executando os testes ==="
 
-                    // Aguarda até que o Flask esteja disponível
-                    sh '''
-                    for i in {1..10}; do
-                        curl --silent --fail ${FLASK_APP_URL} && break || echo "Aguardando o Flask estar disponível..."
-                        sleep 5
-                    done
-                    '''
+                // Aguarda até que o Flask esteja disponível
+                sh '''
+                for i in {1..10}; do
+                    curl --silent --fail ${FLASK_APP_URL} && break || echo "Aguardando o Flask estar disponível..."
+                    sleep 5
+                done
+                '''
 
-                    // Executa o arquivo de teste
-                    sh '''
-                    python3 -m pip install --no-cache-dir requests
-                    python3 test_app.py
-                    '''
-                }
-            }
-        }
-        stage('Verify Grafana') {
-            steps {
-                script {
-                    echo "=== Verificando a URL do Grafana ==="
-                    sh '''
-                    curl --silent --fail http://localhost:3000 || echo "Grafana não está respondendo."
-                    '''
-                }
+                // Executa o arquivo de teste
+                sh '''
+                python3 -m pip install --no-cache-dir requests
+                python3 test_app.py
+                '''
             }
         }
     }
 
     post {
         always {
-            script {
-                echo "=== Derrubando todos os containers ==="
-                sh 'docker-compose down'
-            }
+            echo "=== Derrubando todos os containers ==="
+            sh 'docker-compose down'
         }
         success {
             echo "Pipeline executado com sucesso!"

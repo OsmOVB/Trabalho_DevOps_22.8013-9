@@ -8,24 +8,24 @@ pipeline {
     }
 
     stages {
-        stage('Stop Conflicting Containers') {
+        stage('Free Port 3000') {
             steps {
                 script {
-                    echo "=== Parando containers existentes, se houver ==="
-
-                    // Para todos os containers e remove aqueles que possam estar usando a porta 3000
+                    echo "=== Garantindo que a porta 3000 está livre ==="
+                    
                     sh '''
-                    # Verifica se há containers usando a porta 3000
-                    CONTAINER_ID=$(docker ps -q --filter "publish=${GRAFANA_PORT}")
+                    # Verifica se a porta 3000 está em uso e encerra o processo correspondente
+                    PORT_IN_USE=$(lsof -t -i:${GRAFANA_PORT})
 
-                    if [ ! -z "$CONTAINER_ID" ]; then
-                        echo "Container em execução na porta ${GRAFANA_PORT}. Derrubando..."
-                        docker stop $CONTAINER_ID && docker rm $CONTAINER_ID
+                    if [ ! -z "$PORT_IN_USE" ]; then
+                        echo "A porta ${GRAFANA_PORT} está em uso. Encerrando o processo correspondente..."
+                        kill -9 $PORT_IN_USE
+                        echo "Processo que usava a porta ${GRAFANA_PORT} foi encerrado."
                     else
-                        echo "Nenhum container em execução na porta ${GRAFANA_PORT}."
+                        echo "A porta ${GRAFANA_PORT} está livre."
                     fi
 
-                    # Derruba todos os containers existentes no projeto
+                    # Derruba todos os containers Docker para garantir que nenhum deles está em conflito
                     docker-compose down || true
                     '''
                 }

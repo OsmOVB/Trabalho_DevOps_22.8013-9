@@ -10,10 +10,20 @@ pipeline {
         stage('Stop Existing Environment') {
             steps {
                 script {
-                    echo "=== Parando containers existentes, se houver ==="
+                    echo "=== Verificando o estado do serviço Grafana ==="
                     
-                    // Derruba todos os containers existentes para evitar conflitos
-                    sh 'docker-compose down || true'
+                    // Tenta parar o serviço Grafana com sudo
+                    sh '''
+                    SERVICE_NAME="grafana-server"
+
+                    if systemctl is-active --quiet $SERVICE_NAME; then
+                        echo "O serviço $SERVICE_NAME está em execução. Parando o serviço..."
+                        echo "root" | sudo -S systemctl stop $SERVICE_NAME
+                        echo "O serviço $SERVICE_NAME foi parado com sucesso."
+                    else
+                        echo "O serviço $SERVICE_NAME não está em execução. Nenhuma ação necessária."
+                    fi
+                    '''
                 }
             }
         }

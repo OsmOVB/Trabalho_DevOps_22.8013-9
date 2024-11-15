@@ -1,49 +1,42 @@
 pipeline {
     agent any
-
-    environment {
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
-    }
-
     stages {
-        stage('Pre-Check: Stop and Remove Existing Containers') {
+        stage('Parar Grafana') {
             steps {
                 script {
-                    echo "=== Verificando e parando containers existentes ==="
+                    echo "=== Verificando o estado do serviço Grafana ==="
                     
-                    // Parar e remover todos os containers ativos para evitar conflitos
-                    sh """
-                    # Lista todos os containers ativos e para cada um deles
-                    docker ps -q | xargs -r docker stop || echo 'Nenhum container ativo para parar.'
-                    
-                    # Remove todos os containers, mesmo os que estão parados
-                    docker ps -aq | xargs -r docker rm || echo 'Nenhum container para remover.'
-                    """
-                    
-                    echo "=== Liberando porta 3000 se estiver em uso ==="
-                    // Libera a porta 3000 matando qualquer processo que esteja usando-a
-                    sh """
-                    # Encontra o processo que está usando a porta 3000 e encerra
-                    lsof -t -i:3000 | xargs -r kill -9 || echo 'Nenhum processo usando a porta 3000.'
-                    """
+                    // Verifica se o serviço está ativo
+                    def isGrafanaRunning = sh(
+                        script: 'systemctl is-active --quiet grafana-server && echo "running" || echo "stopped"',
+                        returnStdout: true
+                    ).trim()
+
+                    if (isGrafanaRunning == "running") {
+                        echo "Grafana está em execução. Tentando parar o serviço..."
+                        
+                        // Para o serviço Grafana
+                        sh '''
+                        sudo systemctl stop grafana-server
+                        '''
+                        echo "O serviço Grafana foi parado com sucesso."
+                    } else {
+                        echo "Grafana não está em execução. Nenhuma ação necessária."
+                    }
                 }
             }
         }
-        stage('Git Checkout') {
+        stage('Checkout') {
             steps {
-                echo "=== Iniciando o checkout do repositório Git ==="
-                // Realiza o checkout do código fonte a partir do repositório configurado no Jenkins
+                echo "=== Iniciando o checkout do repositório ==="
                 checkout scm
-                echo "=== Checkout do Git concluído ==="
             }
         }
         stage('Build') {
             steps {
                 script {
-                    echo "=== Iniciando a construção dos containers ==="
-                    // Realiza o build dos containers Docker definidos no docker-compose.yml
+                    echo "=== Construindo os containers ==="
                     sh 'docker-compose build'
-                    echo "=== Containers construídos com sucesso ==="
                 }
             }
         }
@@ -51,9 +44,7 @@ pipeline {
             steps {
                 script {
                     echo "=== Iniciando os containers ==="
-                    // Sobe os serviços do docker-compose
                     sh 'docker-compose up -d'
-                    echo "=== Containers iniciados ==="
                 }
             }
         }
@@ -61,19 +52,16 @@ pipeline {
 
     post {
         always {
-            steps {
-                script {
-                    echo "=== Derrubando todos os containers no final ==="
-                    // Remove todos os containers e redes criados pelo docker-compose
-                    sh 'docker-compose down'
-                }
+            script {
+                echo "=== Derrubando todos os containers ==="
+                sh 'docker-compose down'
             }
         }
         success {
-            echo 'Aplicação inicial rodando com sucesso!'
+            echo "Pipeline executado com sucesso!"
         }
         failure {
-            echo 'Falha ao rodar a aplicação. Verifique os logs.'
+            echo "Falha no pipeline. Verifique os logs."
         }
     }
 }

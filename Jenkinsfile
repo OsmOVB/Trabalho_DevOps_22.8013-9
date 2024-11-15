@@ -4,16 +4,30 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         FLASK_APP_URL = 'http://localhost:5000/alunos'
+        GRAFANA_PORT = '3000'
     }
 
     stages {
-        stage('Stop Existing Environment') {
+        stage('Stop Conflicting Containers') {
             steps {
                 script {
                     echo "=== Parando containers existentes, se houver ==="
-                    
-                    // Derruba todos os containers existentes
-                    sh 'docker-compose down || true'
+
+                    // Para todos os containers e remove aqueles que possam estar usando a porta 3000
+                    sh '''
+                    # Verifica se há containers usando a porta 3000
+                    CONTAINER_ID=$(docker ps -q --filter "publish=${GRAFANA_PORT}")
+
+                    if [ ! -z "$CONTAINER_ID" ]; then
+                        echo "Container em execução na porta ${GRAFANA_PORT}. Derrubando..."
+                        docker stop $CONTAINER_ID && docker rm $CONTAINER_ID
+                    else
+                        echo "Nenhum container em execução na porta ${GRAFANA_PORT}."
+                    fi
+
+                    # Derruba todos os containers existentes no projeto
+                    docker-compose down || true
+                    '''
                 }
             }
         }

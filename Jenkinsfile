@@ -48,6 +48,27 @@ pipeline {
                 }
             }
         }
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo "=== Executando os testes ==="
+
+                    // Aguarda até que o Flask esteja disponível
+                    sh '''
+                    for i in {1..10}; do
+                        curl --silent --fail ${FLASK_APP_URL} && break || echo "Aguardando o Flask estar disponível..."
+                        sleep 5
+                    done
+                    '''
+
+                    // Executa o arquivo de teste
+                    sh '''
+                    python3 -m pip install --no-cache-dir requests
+                    python3 test_app.py
+                    '''
+                }
+            }
+        }
     }
 
     post {

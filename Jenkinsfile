@@ -1,28 +1,29 @@
 pipeline {
     agent any
+
+    environment {
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        FLASK_APP_URL = 'http://localhost:5000/alunos'
+    }
+
     stages {
         stage('Parar Grafana') {
             steps {
                 script {
                     echo "=== Verificando o estado do serviço Grafana ==="
                     
-                    // Verifica se o serviço está ativo
-                    def isGrafanaRunning = sh(
-                        script: 'systemctl is-active --quiet grafana-server && echo "running" || echo "stopped"',
-                        returnStdout: true
-                    ).trim()
+                    // Verifica e para o serviço Grafana diretamente
+                    sh '''
+                    SERVICE_NAME="grafana-server"
 
-                    if (isGrafanaRunning == "running") {
-                        echo "Grafana está em execução. Tentando parar o serviço..."
-                        
-                        // Para o serviço Grafana
-                        sh '''
-                        sudo systemctl stop grafana-server
-                        '''
-                        echo "O serviço Grafana foi parado com sucesso."
-                    } else {
-                        echo "Grafana não está em execução. Nenhuma ação necessária."
-                    }
+                    if systemctl is-active --quiet $SERVICE_NAME; then
+                        echo "O serviço $SERVICE_NAME está em execução. Parando o serviço..."
+                        systemctl stop $SERVICE_NAME
+                        echo "O serviço $SERVICE_NAME foi parado com sucesso."
+                    else
+                        echo "O serviço $SERVICE_NAME não está em execução. Nenhuma ação necessária."
+                    fi
+                    '''
                 }
             }
         }
@@ -65,6 +66,16 @@ pipeline {
                     sh '''
                     python3 -m pip install --no-cache-dir requests
                     python3 test_app.py
+                    '''
+                }
+            }
+        }
+        stage('Verify Grafana') {
+            steps {
+                script {
+                    echo "=== Verificando a URL do Grafana ==="
+                    sh '''
+                    curl --silent --fail http://localhost:3000 || echo "Grafana não está respondendo."
                     '''
                 }
             }

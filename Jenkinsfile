@@ -14,19 +14,29 @@ pipeline {
                     echo "=== Garantindo que a porta 3000 está livre ==="
                     
                     sh '''
-                    # Verifica se a porta 3000 está em uso e encerra o processo correspondente
+                    # Verifica e encerra qualquer processo que esteja usando a porta 3000
                     PORT_IN_USE=$(lsof -t -i:${GRAFANA_PORT})
 
                     if [ ! -z "$PORT_IN_USE" ]; then
                         echo "A porta ${GRAFANA_PORT} está em uso. Encerrando o processo correspondente..."
-                        kill -9 $PORT_IN_USE
-                        echo "Processo que usava a porta ${GRAFANA_PORT} foi encerrado."
+                        kill -9 $PORT_IN_USE || echo "Falha ao encerrar processo na porta ${GRAFANA_PORT}."
+                        echo "Processo encerrado."
                     else
                         echo "A porta ${GRAFANA_PORT} está livre."
                     fi
 
-                    # Derruba todos os containers Docker para garantir que nenhum deles está em conflito
-                    docker-compose down || true
+                    # Derruba qualquer container Docker que possa estar usando a porta 3000
+                    CONTAINER_ID=$(docker ps -q --filter "publish=${GRAFANA_PORT}")
+                    if [ ! -z "$CONTAINER_ID" ]; then
+                        echo "Container usando a porta ${GRAFANA_PORT} encontrado. Encerrando container..."
+                        docker stop $CONTAINER_ID && docker rm $CONTAINER_ID
+                        echo "Container encerrado e removido."
+                    else
+                        echo "Nenhum container em execução na porta ${GRAFANA_PORT}."
+                    fi
+
+                    # Derruba todos os containers Docker para evitar conflitos
+                    docker-compose down || echo "Nenhum container para remover."
                     '''
                 }
             }
@@ -52,7 +62,7 @@ pipeline {
         stage('Run Tests') {
             steps {
                 echo "=== Executando os testes ==="
-
+                
                 // Aguarda até que o Flask esteja disponível
                 sh '''
                 for i in {1..10}; do

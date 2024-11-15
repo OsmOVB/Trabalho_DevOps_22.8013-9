@@ -6,31 +6,42 @@ pipeline {
     }
 
     stages {
-        stage('Pre-Check: Stop Existing Containers') {
+        stage('Pre-Check: Stop and Remove Existing Containers') {
             steps {
-                // Para o Grafana e Prometheus se já estiverem rodando
                 script {
                     echo "=== Verificando e parando containers existentes ==="
+                    
+                    // Parar e remover todos os containers ativos para evitar conflitos
                     sh """
-                    docker ps -q --filter "name=grafana_project-grafana-1" | grep -q . && docker stop grafana_project-grafana-1 || echo 'Grafana não estava rodando.'
-                    docker ps -q --filter "name=grafana_project-prometheus-1" | grep -q . && docker stop grafana_project-prometheus-1 || echo 'Prometheus não estava rodando.'
+                    # Lista todos os containers ativos e para cada um deles
+                    docker ps -q | xargs -r docker stop || echo 'Nenhum container ativo para parar.'
+                    
+                    # Remove todos os containers, mesmo os que estão parados
+                    docker ps -aq | xargs -r docker rm || echo 'Nenhum container para remover.'
+                    """
+                    
+                    echo "=== Liberando porta 3000 se estiver em uso ==="
+                    // Libera a porta 3000 matando qualquer processo que esteja usando-a
+                    sh """
+                    # Encontra o processo que está usando a porta 3000 e encerra
+                    lsof -t -i:3000 | xargs -r kill -9 || echo 'Nenhum processo usando a porta 3000.'
                     """
                 }
             }
         }
         stage('Git Checkout') {
             steps {
-                // Usa o repositório já configurado no Jenkins
                 echo "=== Iniciando o checkout do repositório Git ==="
+                // Realiza o checkout do código fonte a partir do repositório configurado no Jenkins
                 checkout scm
                 echo "=== Checkout do Git concluído ==="
             }
         }
         stage('Build') {
             steps {
-                // Realiza o build dos containers
                 script {
                     echo "=== Iniciando a construção dos containers ==="
+                    // Realiza o build dos containers Docker definidos no docker-compose.yml
                     sh 'docker-compose build'
                     echo "=== Containers construídos com sucesso ==="
                 }
@@ -38,9 +49,9 @@ pipeline {
         }
         stage('Run Containers') {
             steps {
-                // Sobe os containers do docker-compose
                 script {
                     echo "=== Iniciando os containers ==="
+                    // Sobe os serviços do docker-compose
                     sh 'docker-compose up -d'
                     echo "=== Containers iniciados ==="
                 }
@@ -50,10 +61,12 @@ pipeline {
 
     post {
         always {
-            // Derruba os containers ao final
-            script {
-                echo "=== Derrubando todos os containers no final ==="
-                sh 'docker-compose down'
+            steps {
+                script {
+                    echo "=== Derrubando todos os containers no final ==="
+                    // Remove todos os containers e redes criados pelo docker-compose
+                    sh 'docker-compose down'
+                }
             }
         }
         success {

@@ -10,17 +10,10 @@ pipeline {
         stage('Stop Existing Environment') {
             steps {
                 script {
-                    echo "=== Derrubando containers existentes, se houver ==="
+                    echo "=== Parando containers existentes, se houver ==="
                     
-                    // Garante que nenhum container antigo cause conflito
-                    sh '''
-                    if [ -f ${DOCKER_COMPOSE_FILE} ]; then
-                        echo "Arquivo docker-compose encontrado. Parando containers..."
-                        docker-compose down || true
-                    else
-                        echo "Arquivo docker-compose não encontrado. Nenhuma ação necessária."
-                    fi
-                    '''
+                    // Derruba todos os containers existentes para evitar conflitos
+                    sh 'docker-compose down || true'
                 }
             }
         }

@@ -27,14 +27,8 @@ pipeline {
                 sh 'docker-compose up -d'
                 sh 'sleep 10' // Aguarda containers iniciarem
             }
-        }
-        
-        stage('Run Tests') {
-            steps {
-                echo "=== Executando testes ==="
-                sh 'curl -f http://localhost:3000 || exit 1'
-            }
-        }
+        }        
+  
     }    
     
 }

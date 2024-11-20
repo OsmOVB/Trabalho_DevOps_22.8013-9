@@ -20,7 +20,11 @@ pipeline {
                     echo "=== Garantindo que a porta 3000 está livre ==="
                     def portInUse = sh(script: 'lsof -t -i:3000', returnStdout: true).trim()
                     if (portInUse) {
+                        echo "Porta 3000 em uso pelo processo: ${portInUse}"
                         sh "kill -9 ${portInUse}"
+                        echo "Processo ${portInUse} encerrado"
+                    } else {
+                        echo "Porta 3000 está livre"
                     }
                 }
             }

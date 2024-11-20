@@ -18,9 +18,9 @@ pipeline {
             steps {
                 script {
                     echo "=== Garantindo que a porta 3000 está livre ==="
-                    def portInUse = sh(script: 'lsof -t -i:3000', returnStatus: true)
-                    if (portInUse == 0) {
-                        sh 'kill $(lsof -t -i:3000)'
+                    def portInUse = sh(script: 'lsof -t -i:3000', returnStdout: true).trim()
+                    if (portInUse) {
+                        sh "kill -9 ${portInUse}"
                     }
                 }
             }

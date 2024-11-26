@@ -20,6 +20,21 @@ pipeline {
                 sh 'docker-compose build --no-cache'
             }
         }
+
+        stage('Run Test') {
+            steps {
+                echo "=== Executando testes ==="
+                script {
+                    // Sobe os serviços necessários para os testes (ex.: banco de dados e aplicação Flask)
+                    sh 'docker-compose up -d mariadb flask'
+                    sh 'sleep 10' // Tempo para garantir que o banco de dados está pronto
+                    // Executa os testes
+                    sh 'docker exec $(docker ps -qf "name=flask") pytest'
+                    // Derruba os containers após os testes
+                    sh 'docker-compose down'
+                }
+            }
+        }
         
         stage('Run Containers') {
             steps {

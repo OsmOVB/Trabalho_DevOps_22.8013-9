@@ -21,20 +21,23 @@ pipeline {
             }
         }
 
-        stage('Run Test') {
+        stage('Testar Aplicação') {
             steps {
                 echo "=== Executando testes ==="
                 script {
-                    // Sobe os serviços necessários para os testes (ex.: banco de dados e aplicação Flask)
+                    // Subir os serviços
                     sh 'docker-compose up -d mariadb flask'
-                    sh 'sleep 10' // Tempo para garantir que o banco de dados está pronto
-                    // Executa os testes
-                    sh 'docker exec $(docker ps -qf "name=flask") pytest'
-                    // Derruba os containers após os testes
+                    sh 'sleep 10' // Aguarda inicialização dos serviços
+
+                    // Rodar os testes dentro do container Flask
+                    sh 'docker exec $(docker ps -qf "name=flask") python /app/tests/test_cadastrar_aluno.py'
+
+                    // Derrubar os serviços após os testes
                     sh 'docker-compose down'
                 }
             }
         }
+
         
         stage('Run Containers') {
             steps {

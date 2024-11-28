@@ -7,6 +7,8 @@ pipeline {
                 script {
                     // Parar e remover containers existentes, se houver
                     sh '''
+                    docker ps -aq | xargs -r docker stop
+                    docker ps -aq | xargs -r docker rm
                     docker-compose down || true
                     docker system prune -f || true
                     '''

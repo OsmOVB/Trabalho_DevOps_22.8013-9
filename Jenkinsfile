@@ -29,16 +29,16 @@ pipeline {
         stage('Testar Aplicação') {
             steps {
                 echo '=== Executando testes ==='
-                script {
+                 script {
                     // Subir os serviços necessários para os testes
                     sh '''
                     docker-compose up -d mariadb flask
                     sleep 10  # Aguarda a inicialização dos serviços
                     '''
-
+                    sh 'docker ps -qf "name=flask_mariadb-flask"'
                     // Executar testes dentro do container Flask
                     sh '''
-                    docker exec $(docker ps -qf "name=flask") \
+                    docker exec $(docker ps -qf "name=flask_mariadb-flask") \
                     python /app/tests/test_cadastrar_aluno.py
                     '''
 

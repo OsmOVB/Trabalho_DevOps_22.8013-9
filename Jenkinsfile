@@ -35,10 +35,10 @@ pipeline {
                     docker-compose up -d mariadb flask
                     sleep 10  # Aguarda a inicialização dos serviços
                     '''
-                    sh 'docker ps -qf "name=flask_mariadb-flask"'
+                    //sh 'docker ps -qf "name=flask_mariadb-flask"'
                     // Executar testes dentro do container Flask
                     sh '''
-                    docker exec $(docker ps -qf "name=flask_mariadb-flask") \
+                    docker exec $(docker ps -qf "name=flask-container") \
                     python /app/tests/test_cadastrar_aluno.py
                     '''
 
@@ -51,7 +51,7 @@ pipeline {
         stage('Deploy Application') {
             steps {
                 echo '=== Realizando deploy da aplicação ==='
-                sh 'docker-compose up -d'  // Subir os containers da aplicação em modo detach
+                sh 'docker-compose up --build'  // Subir os containers da aplicação em modo detach
             }
         }
     }

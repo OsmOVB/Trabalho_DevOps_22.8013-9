@@ -75,3 +75,23 @@ O ambiente completo é provisionado via Docker Compose.
 - Para rodar manualmente:
   ```bash
   pytest tests/test_app.py
+
+---
+### 5. Imagens
+- Tela de alunos do flask
+![Tela de Alunos do Flask](image/flask.png)
+
+- Tela de Configuraçoes Jenkins
+![Tela de Configuraçoes Jenkins](image/Configuracoes_Jenkins.png)
+
+- Tela Prometheus 
+![Prometheus](image/Prometheus.png)
+
+- Dashboards Grafana
+![dashboards](image/dashboards.png)
+
+- Dashboards banco mariadb
+![dashboards banco de dados](image/dashboard_banco_de_dados.png)
+
+- Dashboards flask
+![dashboards](image/dashboards_flask_application.png)
